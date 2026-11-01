@@ -13,6 +13,10 @@ if (-not $py) {
     Start-Process $installer "/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1" -Wait
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","User") + ";" + $env:PATH
     $py = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $py) {
+        Write-Host "Python всё ещё не найден после установки. Перезапусти терминал и попробуй снова." -ForegroundColor Red
+        exit 1
+    }
 }
 
 $pyExe = $py.Source
@@ -26,7 +30,12 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $appFile = Join-Path $scriptDir "deepagent.py"
 
 if (-not (Test-Path $appFile)) {
-    Write-Host "deepcli1.py не найден рядом с install.ps1" -ForegroundColor Red
+    Write-Host "deepagent.py не найден рядом с install.ps1. Скачиваю..." -ForegroundColor Yellow
+    Invoke-WebRequest "https://raw.githubusercontent.com/timshadow000/deepagent/refs/heads/main/install/deepagent.py" -OutFile $appFile
+}
+
+if (-not (Test-Path $appFile)) {
+    Write-Host "Не удалось получить deepagent.py." -ForegroundColor Red
     exit 1
 }
 
