@@ -26,11 +26,13 @@ Write-Host "Устанавливаю зависимости..." -ForegroundColor
 & $pyExe -m pip install --upgrade pip --quiet
 & $pyExe -m pip install pywebview openai openpyxl pypdf --quiet
 
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$appFile = Join-Path $scriptDir "deepagent.py"
+$installDir = "$env:USERPROFILE\DeepSeekDesktop"
+New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+
+$appFile = Join-Path $installDir "deepagent.py"
 
 if (-not (Test-Path $appFile)) {
-    Write-Host "deepagent.py не найден рядом с install.ps1. Скачиваю..." -ForegroundColor Yellow
+    Write-Host "Скачиваю deepagent.py..." -ForegroundColor Yellow
     Invoke-WebRequest "https://raw.githubusercontent.com/timshadow000/deepagent/refs/heads/main/install/deepagent.py" -OutFile $appFile
 }
 
