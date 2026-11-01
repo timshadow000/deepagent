@@ -65,16 +65,16 @@ if (-not (Test-Path $PROFILE)) {
     [void](New-Item -ItemType File -Path $PROFILE)
 }
 
-$funcLine = "function ds-agent { Start-Process `"$pyExe`" `"$appFile`" }"
 $profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 if ($profileContent -notlike "*ds-agent*") {
-    Add-Content $PROFILE "`n$funcLine"
+    $funcLine = "function ds-agent { Start-Process '$pyExe' '$appFile' }"
+    Add-Content -Path $PROFILE -Value "`n$funcLine" -Encoding UTF8
     Write-Host "Команда 'ds-agent' добавлена в PowerShell профиль." -ForegroundColor Green
 } else {
     Write-Host "Команда 'ds-agent' уже есть в профиле." -ForegroundColor Green
 }
 
-. $PROFILE 2>&1 | Out-Null
+& powershell -NoProfile -Command "Add-Content -Path '$PROFILE' -Value '' -Encoding UTF8" 2>&1 | Out-Null
 
 Write-Host ""
 Write-Host "Готово! Теперь можешь запускать приложение командой: ds-agent" -ForegroundColor Cyan
