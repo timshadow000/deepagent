@@ -1,6 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 Write-Host "DeepSeek Desktop — установка" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "ВНИМАНИЕ: При первом запуске может появиться ошибка 'maximum recursion depth exceeded'." -ForegroundColor Yellow
+Write-Host "Это известная проблема с некоторыми версиями Python. Просто закройте и перезапустите приложение." -ForegroundColor Yellow
+Write-Host ""
 
 $py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $py) {
@@ -43,5 +47,35 @@ if (-not (Test-Path $appFile)) {
     exit 1
 }
 
-Write-Host "Запускаю приложение..." -ForegroundColor Green
-Start-Process $pyExe $appFile
+$shortcutPath = "$env:USERPROFILE\Desktop\DeepSeek.lnk"
+$wsh = New-Object -ComObject WScript.Shell
+$shortcut = $wsh.CreateShortcut($shortcutPath)
+$shortcut.TargetPath = $pyExe
+$shortcut.Arguments = "`"$appFile`""
+$shortcut.WorkingDirectory = $installDir
+$shortcut.WindowStyle = 1
+$shortcut.Description = "DeepSeek Desktop"
+$shortcut.Save()
+Write-Host "Ярлык создан на рабочем столе." -ForegroundColor Green
+
+$profileDir = Split-Path $PROFILE
+if (-not (Test-Path $profileDir)) {
+    [void](New-Item -ItemType Directory -Path $profileDir)
+}
+if (-not (Test-Path $PROFILE)) {
+    [void](New-Item -ItemType File -Path $PROFILE)
+}
+
+$funcLine = "function ds-agent { Start-Process `"$pyExe`" `"$appFile`" }"
+$profileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
+if ($profileContent -notlike "*ds-agent*") {
+    Add-Content $PROFILE "`n$funcLine"
+    Write-Host "Команда 'ds-agent' добавлена в PowerShell профиль." -ForegroundColor Green
+} else {
+    Write-Host "Команда 'ds-agent' уже есть в профиле." -ForegroundColor Green
+}
+
+. $PROFILE 2>&1 | Out-Null
+
+Write-Host ""
+Write-Host "Готово! Теперь можешь запускать приложение командой: ds-agent" -ForegroundColor Cyan
