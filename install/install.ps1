@@ -14,7 +14,7 @@ if (-not $py) {
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","User") + ";" + $env:PATH
     $py = Get-Command python -ErrorAction SilentlyContinue
     if (-not $py) {
-        Write-Host "Python всё ещё не найден после установки. Перезапусти терминал и попробуй снова." -ForegroundColor Red
+        Write-Host "Python всё ещё не найден. Перезапусти терминал и попробуй снова." -ForegroundColor Red
         exit 1
     }
 }
@@ -23,11 +23,13 @@ $pyExe = $py.Source
 Write-Host "Python: $pyExe" -ForegroundColor Green
 
 Write-Host "Устанавливаю зависимости..." -ForegroundColor Cyan
-& $pyExe -m pip install --upgrade pip --quiet
-& $pyExe -m pip install pywebview openai openpyxl pypdf --quiet
+& $pyExe -m pip install --upgrade pip --quiet 2>&1 | Out-Null
+& $pyExe -m pip install pywebview openai openpyxl pypdf --quiet 2>&1 | Out-Null
 
 $installDir = "$env:USERPROFILE\DeepSeekDesktop"
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+if (-not (Test-Path $installDir)) {
+    [void](New-Item -ItemType Directory -Path $installDir)
+}
 
 $appFile = Join-Path $installDir "deepagent.py"
 
