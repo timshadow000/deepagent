@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeepSeek Agent — by @soxma</title>
+<link rel="icon" href="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#04040d;
+    --bg2:#07071a;
+    --primary:#4d6bfe;
+    --primary2:#7b61ff;
+    --accent:#00d4ff;
+    --pink:#ff4dab;
+    --text:#eef0fa;
+    --muted:#8b8fa8;
+    --dim:#5a5e78;
+    --border:rgba(255,255,255,.07);
+    --border-hi:rgba(255,255,255,.15);
+    --card:rgba(255,255,255,.025);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overflow-x:hidden;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    cursor:none;
+  }
+  @media (hover:none){ body{cursor:auto} .cursor,.cursor-dot{display:none!important} }
+  ::selection{background:rgba(123,97,255,.4);color:#fff}
+
+  .cursor,.cursor-dot{
+    position:fixed;top:0;left:0;pointer-events:none;z-index:9999;
+    transform:translate(-50%,-50%);border-radius:50%;
+    transition:width .25s,height .25s,background .25s,border-color .25s,opacity .3s;
+  }
+  .cursor{
+    width:34px;height:34px;border:1.5px solid rgba(123,97,255,.7);
+    mix-blend-mode:screen;
+  }
+  .cursor.hover{width:64px;height:64px;background:rgba(123,97,255,.15);border-color:rgba(0,212,255,.9)}
+  .cursor-dot{width:5px;height:5px;background:#fff;mix-blend-mode:difference}
+
+  .noise{
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #particles{position:fixed;inset:0;z-index:-1;opacity:.55}
+  .bg-grid{
+    position:fixed;inset:0;z-index:-2;
+    background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+    background-size:80px 80px;
+    mask-image:radial-gradient(ellipse 90% 70% at 50% 30%,#000 30%,transparent 100%);
+  }
+  .orb{position:fixed;border-radius:50%;filter:blur(120px);z-index:-3;pointer-events:none;opacity:.5;will-change:transform}
+  .orb1{width:600px;height:600px;background:#4d6bfe;top:-220px;left:-160px}
+  .orb2{width:520px;height:520px;background:#7b61ff;top:25%;right:-200px}
+  .orb3{width:460px;height:460px;background:#00d4ff;bottom:-160px;left:25%;opacity:.22}
+
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:200;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 5vw;transition:.4s;
+  }
+  nav.scrolled{
+    background:rgba(4,4,13,.7);
+    backdrop-filter:blur(20px) saturate(180%);
+    border-bottom:1px solid var(--border);
+    padding:12px 5vw;
+  }
+  .brand{display:flex;align-items:center;gap:12px;font-family:'Space Grotesk';font-weight:700;font-size:17px;letter-spacing:-.4px;text-decoration:none;color:var(--text)}
+  .brand .logo-wrap{position:relative;width:38px;height:38px}
+  .brand .logo-wrap::before{
+    content:'';position:absolute;inset:-4px;border-radius:12px;
+    background:conic-gradient(from 0deg,#4d6bfe,#7b61ff,#00d4ff,#4d6bfe);
+    animation:spin 4s linear infinite;opacity:.6;filter:blur(6px);
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .brand img{position:relative;width:38px;height:38px;border-radius:11px;object-fit:cover;border:1px solid rgba(255,255,255,.1)}
+  .brand span b{background:linear-gradient(90deg,#4d6bfe,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nav-links{display:flex;gap:30px;align-items:center}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:.2s;position:relative;padding:6px 0}
+  .nav-links a::after{content:'';position:absolute;left:0;bottom:0;width:0;height:1.5px;background:linear-gradient(90deg,#4d6bfe,#00d4ff);transition:.3s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-links a:hover::after{width:100%}
+  .nav-cta{
+    padding:10px 22px;border-radius:11px;font-size:13.5px;font-weight:600;text-decoration:none;
+    color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));
+    box-shadow:0 6px 24px rgba(77,107,254,.4);transition:.3s;position:relative;overflow:hidden;
+  }
+  .nav-cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#7b61ff,#00d4ff);opacity:0;transition:.3s}
+  .nav-cta span{position:relative;z-index:1}
+  .nav-cta:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(77,107,254,.6)}
+  .nav-cta:hover::before{opacity:1}
+  .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px}
+  .burger div{width:24px;height:2px;background:var(--text);border-radius:2px;transition:.3s}
+
+  .hero{
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:130px 5vw 60px;position:relative;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:8px 18px;border-radius:100px;font-size:12.5px;font-weight:600;
+    background:rgba(77,107,254,.08);border:1px solid rgba(77,107,254,.25);
+    color:#a9b6ff;margin-bottom:36px;backdrop-filter:blur(10px);
+    position:relative;overflow:hidden;
+  }
+  .badge::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(0,212,255,.15),transparent);
+    transform:translateX(-100%);animation:shine 3s infinite;
+  }
+  @keyframes shine{to{transform:translateX(100%)}}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:#00d4ff;box-shadow:0 0 12px #00d4ff;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+  .badge code{font-family:'JetBrains Mono';background:rgba(0,0,0,.4);padding:2px 7px;border-radius:5px;color:#00d4ff;font-size:11.5px}
+
+  .hero-logo-wrap{position:relative;margin-bottom:36px}
+  .hero-logo-wrap::before{
+    content:'';position:absolute;inset:-30px;
+    background:radial-gradient(circle,rgba(123,97,255,.5),transparent 60%);
+    filter:blur(30px);animation:breathe 4s ease-in-out infinite;z-index:-1;
+  }
+  @keyframes breathe{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
+  .hero-logo{
+    width:120px;height:120px;border-radius:30px;object-fit:cover;
+    border:1.5px solid rgba(255,255,255,.15);
+    box-shadow:0 20px 60px rgba(77,107,254,.5),inset 0 1px 0 rgba(255,255,255,.1);
+    animation:bob 6s ease-in-out infinite;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(-2deg)}}
+
+  h1.hero-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(42px,8vw,96px);font-weight:700;line-height:.98;letter-spacing:-3.5px;
+    max-width:1100px;margin-bottom:28px;
+  }
+  .word{display:inline-block;overflow:hidden;vertical-align:top}
+  .word span{display:inline-block;animation:wordIn 1s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes wordIn{from{transform:translateY(100%) rotate(6deg);opacity:0}to{transform:translateY(0) rotate(0);opacity:1}}
+  h1.hero-title .grad{
+    background:linear-gradient(120deg,#4d6bfe 0%,#7b61ff 35%,#00d4ff 70%,#4d6bfe 100%);
+    background-size:200% auto;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:gradShift 5s linear infinite;
+  }
+  @keyframes gradShift{to{background-position:200% center}}
+  .hero-sub{
+    font-size:clamp(15px,1.8vw,18px);color:var(--muted);max-width:620px;margin-bottom:44px;
+    line-height:1.7;
+  }
+  .hero-sub b{color:var(--text);font-weight:600}
+  .hero-sub .py{color:#ffd43b;font-weight:600}
+  .hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:70px}
+  .btn{
+    padding:16px 34px;border-radius:14px;font-size:15px;font-weight:600;text-decoration:none;
+    display:inline-flex;align-items:center;gap:10px;transition:.3s;cursor:pointer;border:none;
+    position:relative;overflow:hidden;font-family:inherit;
+  }
+  .btn-primary{
+    color:#fff;background:linear-gradient(135deg,#4d6bfe,#7b61ff);
+    box-shadow:0 12px 36px rgba(77,107,254,.4),inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .btn-primary::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,#7b61ff,#00d4ff);
+    opacity:0;transition:.4s;z-index:0;
+  }
+  .btn-primary span{position:relative;z-index:1}
+  .btn-primary:hover{transform:translateY(-3px);box-shadow:0 20px 50px rgba(77,107,254,.55)}
+  .btn-primary:hover::before{opacity:1}
+  .btn-ghost{
+    color:var(--text);background:rgba(255,255,255,.03);
+    border:1px solid var(--border-hi);backdrop-filter:blur(10px);
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,.07);transform:translateY(-3px);border-color:rgba(255,255,255,.25)}
+
+  .scroll-hint{
+    position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    color:var(--dim);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;
+  }
+  .mouse{width:22px;height:34px;border:1.5px solid rgba(255,255,255,.25);border-radius:12px;position:relative}
+  .mouse::after{
+    content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);
+    width:3px;height:7px;background:#fff;border-radius:2px;
+    animation:scrollDot 2s infinite;
+  }
+  @keyframes scrollDot{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,12px)}}
+
+  .marquee{
+    padding:24px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+    overflow:hidden;position:relative;background:rgba(0,0,0,.2);
+    mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+  }
+  .marquee-track{display:flex;gap:60px;width:max-content;animation:scroll 40s linear infinite}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+  .marquee-item{
+    display:flex;align-items:center;gap:12px;font-family:'Space Grotesk';
+    font-size:20px;font-weight:600;color:rgba(255,255,255,.35);white-space:nowrap;
+    transition:.3s;
+  }
+  .marquee-item:hover{color:var(--text)}
+  .marquee-item .dotm{width:6px;height:6px;border-radius:50%;background:#4d6bfe}
+  .marquee-item code{color:#00d4ff;font-family:'JetBrains Mono'}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    max-width:1240px;margin:0 auto;padding:80px 5vw;
+    background:var(--border);
+    border-left:1px solid var(--border);border-right:1px solid var(--border);
+  }
+  .stat{
+    text-align:center;padding:40px 20px;background:var(--bg);
+    position:relative;transition:.4s;
+  }
+  .stat::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at center,rgba(77,107,254,.15),transparent 70%);
+    opacity:0;transition:.4s;
+  }
+  .stat:hover::before{opacity:1}
+  .stat .num{
+    font-family:'Space Grotesk';font-size:48px;font-weight:700;letter-spacing:-2px;
+    background:linear-gradient(135deg,#fff,#a9b6ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+    line-height:1;
+  }
+  .stat .lbl{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:10px;letter-spacing:1px;text-transform:uppercase}
+
+  section{padding:120px 5vw;position:relative}
+  .sec-head{text-align:center;max-width:760px;margin:0 auto 76px}
+  .sec-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'JetBrains Mono';font-size:12px;font-weight:600;letter-spacing:1px;
+    color:#7b8dff;margin-bottom:20px;padding:6px 14px;
+    background:rgba(77,107,254,.08);border:1px solid rgba(77,107,254,.2);border-radius:100px;
+  }
+  .sec-tag::before{content:'// '}
+  .sec-title{
+    font-family:'Space Grotesk';font-size:clamp(32px,5vw,54px);font-weight:700;
+    letter-spacing:-1.8px;line-height:1.05;margin-bottom:20px;
+  }
+  .sec-sub{color:var(--muted);font-size:16.5px;line-height:1.65}
+
+  .features{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;max-width:1200px;margin:0 auto}
+  .feat{
+    padding:32px;border-radius:24px;position:relative;overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+    border:1px solid var(--border);backdrop-filter:blur(10px);
+    transition:transform .4s cubic-bezier(.2,.8,.2,1),border-color .4s;
+    opacity:0;transform:translateY(40px);
+    will-change:transform;
+  }
+  .feat.show{opacity:1;transform:translateY(0)}
+  .feat::before{
+    content:'';position:absolute;inset:0;border-radius:24px;padding:1px;
+    background:linear-gradient(135deg,rgba(123,97,255,.6),rgba(0,212,255,.4),transparent 60%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:.4s;
+  }
+  .feat:hover{border-color:transparent}
+  .feat:hover::before{opacity:1}
+  .feat-glow{
+    position:absolute;width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle,rgba(123,97,255,.35),transparent 70%);
+    filter:blur(30px);pointer-events:none;opacity:0;transition:opacity .4s;
+    transform:translate(-50%,-50%);
+  }
+  .feat:hover .feat-glow{opacity:1}
+  .feat.span-2{grid-column:span 2}
+  .feat.span-3{grid-column:span 3}
+  .feat.span-4{grid-column:span 4}
+  .feat .ico{
+    width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:26px;
+    background:linear-gradient(135deg,rgba(77,107,254,.25),rgba(123,97,255,.1));
+    border:1px solid rgba(123,97,255,.3);margin-bottom:24px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 24px rgba(77,107,254,.2);
+  }
+  .feat h3{font-family:'Space Grotesk';font-size:20px;font-weight:600;margin-bottom:10px;letter-spacing:-.4px}
+  .feat p{color:var(--muted);font-size:14.5px;line-height:1.6}
+  .feat p code{
+    font-family:'JetBrains Mono';font-size:12.5px;color:#00d4ff;
+    background:rgba(0,212,255,.1);padding:2px 6px;border-radius:4px;
+  }
+
+  .feat.py-feat{background:linear-gradient(135deg,rgba(255,212,59,.06),rgba(255,77,171,.03));border-color:rgba(255,212,59,.15)}
+  .feat.py-feat .ico{background:linear-gradient(135deg,rgba(255,212,59,.25),rgba(255,150,0,.1));border-color:rgba(255,212,59,.35)}
+  .mini-code{
+    margin-top:20px;padding:16px;border-radius:12px;
+    background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);
+    font-family:'JetBrains Mono';font-size:12px;line-height:1.7;color:#c9cfea;
+    overflow:hidden;position:relative;
+  }
+  .mini-code .kw{color:#ff79c6}
+  .mini-code .str{color:#f1fa8c}
+  .mini-code .fn{color:#8be9fd}
+
+  .install-wrap{max-width:920px;margin:0 auto}
+  .install-card{
+    padding:44px;
+    border-radius:28px;
+    background:linear-gradient(180deg,rgba(18,18,38,.9),rgba(8,8,22,.95));
+    border:1px solid var(--border-hi);
+    box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 100px rgba(77,107,254,.12),inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter:blur(30px);
+    position:relative;
+  }
+  .install-card::before{
+    content:'';position:absolute;inset:-40px;
+    background:radial-gradient(ellipse at center,rgba(77,107,254,.15),transparent 70%);
+    filter:blur(40px);z-index:-1;pointer-events:none;
+  }
+  .step{display:flex;gap:24px;padding:28px 0;border-bottom:1px solid var(--border);position:relative}
+  .step:last-child{border-bottom:none;padding-bottom:0}
+  .step:first-child{padding-top:0}
+  .step-num{
+    width:44px;height:44px;flex-shrink:0;border-radius:14px;
+    display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:18px;
+    background:linear-gradient(135deg,rgba(77,107,254,.25),rgba(123,97,255,.1));
+    border:1px solid rgba(123,97,255,.3);color:#a9b6ff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 8px 20px rgba(77,107,254,.2);
+  }
+  .step-content{flex:1;min-width:0}
+  .step-content h3{font-family:'Space Grotesk';font-size:19px;font-weight:600;margin-bottom:8px;letter-spacing:-.3px}
+  .step-content > p{color:var(--muted);font-size:14.5px;line-height:1.6;margin-bottom:14px}
+  .step-content code{
+    font-family:'JetBrains Mono';font-size:12.5px;
+    background:rgba(0,212,255,.1);padding:2px 6px;border-radius:4px;color:#00d4ff;
+  }
+  .cmd-box{
+    display:flex;align-items:stretch;gap:0;
+    border-radius:12px;overflow:hidden;
+    background:rgba(0,0,0,.5);border:1px solid rgba(0,212,255,.2);
+    position:relative;margin-top:22px;
+  }
+  .cmd-box::before{
+    content:'PowerShell';position:absolute;top:-9px;left:14px;
+    font-size:10px;padding:2px 8px;border-radius:4px;
+    background:#0a0a18;color:#7b8dff;border:1px solid rgba(123,97,255,.3);
+    font-family:'JetBrains Mono';letter-spacing:.5px;
+  }
+  .cmd-box code{
+    flex:1;padding:22px 18px 18px;color:#f1fa8c;background:transparent;
+    font-size:12.5px;overflow-x:auto;white-space:pre;line-height:1.5;
+    font-family:'JetBrains Mono';
+  }
+  .copy-btn{
+    padding:0 20px;border:none;cursor:pointer;font-weight:600;font-size:12.5px;
+    background:rgba(77,107,254,.15);color:#a9b6ff;transition:.25s;
+    font-family:inherit;border-left:1px solid rgba(77,107,254,.2);
+    white-space:nowrap;
+  }
+  .copy-btn:hover{background:rgba(77,107,254,.3);color:#fff}
+  .copy-btn.copied{background:rgba(61,220,151,.2);color:#3ddc97}
+
+  .api-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  .api-card{
+    display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid var(--border);
+    text-decoration:none;color:var(--text);transition:.25s;
+  }
+  .api-card:hover{
+    background:rgba(77,107,254,.08);border-color:rgba(77,107,254,.4);
+    transform:translateY(-2px);
+  }
+  .api-ico{
+    width:40px;height:40px;flex-shrink:0;border-radius:10px;display:grid;place-items:center;
+    font-size:20px;background:linear-gradient(135deg,rgba(77,107,254,.2),rgba(123,97,255,.1));
+    border:1px solid rgba(123,97,255,.25);
+  }
+  .api-info{flex:1;min-width:0}
+  .api-info h4{font-family:'Space Grotesk';font-weight:600;font-size:14.5px;margin-bottom:2px}
+  .api-info span{font-size:12px;color:var(--dim);font-family:'JetBrains Mono'}
+  .api-arrow{color:var(--dim);transition:.25s;font-size:16px}
+  .api-card:hover .api-arrow{color:#00d4ff;transform:translateX(3px)}
+
+  .terminal-wrap{max-width:960px;margin:0 auto}
+  .terminal{
+    border-radius:20px;overflow:hidden;
+    background:#0a0a18;
+    border:1px solid var(--border);
+    box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 80px rgba(77,107,254,.15),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .term-head{
+    display:flex;align-items:center;gap:10px;padding:14px 20px;
+    background:rgba(255,255,255,.03);border-bottom:1px solid var(--border);
+  }
+  .term-dots{display:flex;gap:8px}
+  .term-dots span{width:12px;height:12px;border-radius:50%}
+  .term-dots span:nth-child(1){background:#ff5f57}
+  .term-dots span:nth-child(2){background:#febc2e}
+  .term-dots span:nth-child(3){background:#28c840}
+  .term-title{flex:1;text-align:center;font-family:'JetBrains Mono';font-size:12.5px;color:var(--dim)}
+  .term-body{
+    padding:26px 24px;font-family:'JetBrains Mono';font-size:13.5px;line-height:1.8;
+    min-height:340px;color:#c9cfea;overflow-x:auto;
+  }
+  .term-body .line{white-space:pre;margin-bottom:2px;animation:lineIn .4s ease both}
+  @keyframes lineIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  .term-body .prompt{color:#00d4ff}
+  .term-body .kw{color:#ff79c6}
+  .term-body .str{color:#f1fa8c}
+  .term-body .fn{color:#8be9fd}
+  .term-body .num{color:#bd93f9}
+  .term-body .cmt{color:#6272a4;font-style:italic}
+  .term-body .ok{color:#3ddc97}
+
+  .demo-wrap{max-width:960px;margin:0 auto;position:relative}
+  .demo-wrap::before{
+    content:'';position:absolute;inset:-40px;
+    background:radial-gradient(ellipse at center,rgba(77,107,254,.15),transparent 70%);
+    filter:blur(40px);z-index:-1;pointer-events:none;
+  }
+  .chat-window{
+    border-radius:26px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(18,18,38,.9),rgba(8,8,22,.95));
+    border:1px solid var(--border-hi);
+    box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 100px rgba(77,107,254,.12),
+      inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter:blur(30px);
+  }
+  .chat-top{
+    display:flex;align-items:center;gap:14px;padding:18px 24px;
+    border-bottom:1px solid var(--border);background:rgba(255,255,255,.015);
+  }
+  .chat-top .avatar{position:relative;width:40px;height:40px;flex-shrink:0}
+  .chat-top .avatar img{width:40px;height:40px;border-radius:11px;object-fit:cover;border:1px solid rgba(255,255,255,.1)}
+  .chat-top .avatar::after{
+    content:'';position:absolute;bottom:-2px;right:-2px;width:12px;height:12px;
+    border-radius:50%;background:#3ddc97;border:2.5px solid #0d0d1e;box-shadow:0 0 10px #3ddc97;
+  }
+  .chat-top .info{display:flex;flex-direction:column;flex:1}
+  .chat-top .name{font-weight:700;font-size:15px}
+  .chat-top .status{font-size:12px;color:#3ddc97;display:flex;align-items:center;gap:6px;font-weight:500}
+  .chat-top .model-tag{
+    font-family:'JetBrains Mono';font-size:10.5px;color:#00d4ff;
+    padding:4px 10px;border-radius:100px;background:rgba(0,212,255,.1);
+    border:1px solid rgba(0,212,255,.3);letter-spacing:.5px;
+    transition:.3s;
+  }
+  .chat-body{
+    height:440px;overflow-y:auto;padding:28px 24px;display:flex;flex-direction:column;gap:18px;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;
+  }
+  .chat-body::-webkit-scrollbar{width:6px}
+  .chat-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+  .msg{display:flex;gap:12px;max-width:82%;animation:msgIn .4s cubic-bezier(.2,.8,.2,1)}
+  @keyframes msgIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .msg .av{width:34px;height:34px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.08)}
+  .msg .bubble{
+    padding:13px 17px;border-radius:16px;font-size:14.5px;line-height:1.6;
+    word-break:break-word;
+  }
+  .msg .bubble code{
+    font-family:'JetBrains Mono';font-size:12.5px;
+    background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;color:#00d4ff;
+  }
+  .msg.bot .bubble{background:rgba(255,255,255,.05);border:1px solid var(--border);border-top-left-radius:5px}
+  .msg.user{flex-direction:row-reverse;align-self:flex-end}
+  .msg.user .bubble{
+    background:linear-gradient(135deg,#4d6bfe,#7b61ff);
+    color:#fff;border-top-right-radius:5px;
+    box-shadow:0 6px 20px rgba(77,107,254,.35);
+  }
+  .typing{display:flex;gap:5px;padding:18px 17px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:#7b8dff;animation:blink 1.4s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}
+  .typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
+  .chat-input{
+    display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border);
+    background:rgba(255,255,255,.015);
+  }
+  .chat-input input{
+    flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);
+    border-radius:13px;padding:14px 18px;color:var(--text);font-size:14.5px;font-family:inherit;
+    outline:none;transition:.25s;
+  }
+  .chat-input input:focus{border-color:rgba(77,107,254,.6);background:rgba(77,107,254,.06);box-shadow:0 0 0 4px rgba(77,107,254,.1)}
+  .chat-input input::placeholder{color:var(--dim)}
+  .chat-send{
+    padding:0 26px;border-radius:13px;border:none;cursor:pointer;font-weight:700;font-size:14.5px;
+    background:linear-gradient(135deg,#4d6bfe,#7b61ff);color:#fff;transition:.25s;
+    display:grid;place-items:center;font-family:inherit;
+  }
+  .chat-send:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(77,107,254,.5)}
+  .chat-send:active{transform:translateY(0)}
+  .chat-send:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .quick{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 16px}
+  .quick button{
+    padding:8px 15px;border-radius:100px;font-size:12.5px;font-weight:500;cursor:pointer;
+    background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);
+    transition:.2s;font-family:inherit;
+  }
+  .quick button:hover{background:rgba(77,107,254,.12);border-color:rgba(77,107,254,.4);color:var(--text);transform:translateY(-1px)}
+  .quick button:disabled{opacity:.4;cursor:not-allowed}
+
+  .about{
+    max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr 1.5fr;gap:60px;align-items:center;
+    padding:56px;border-radius:32px;
+    background:linear-gradient(135deg,rgba(77,107,254,.06),rgba(123,97,255,.03));
+    border:1px solid var(--border);position:relative;overflow:hidden;
+    backdrop-filter:blur(20px);
+  }
+  .about::before{
+    content:'';position:absolute;width:500px;height:500px;
+    background:radial-gradient(circle,rgba(77,107,254,.3),transparent 60%);
+    filter:blur(80px);top:-250px;right:-250px;border-radius:50%;
+  }
+  .about::after{
+    content:'';position:absolute;width:400px;height:400px;
+    background:radial-gradient(circle,rgba(255,77,171,.15),transparent 60%);
+    filter:blur(80px);bottom:-200px;left:-200px;border-radius:50%;
+  }
+  .about-photo{display:flex;flex-direction:column;align-items:center;gap:20px;position:relative;z-index:1}
+  .about-avatar-wrap{position:relative;padding:6px}
+  .about-avatar-wrap::before{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,#4d6bfe,#7b61ff,#00d4ff,#ff4dab,#4d6bfe);
+    animation:spin 6s linear infinite;
+  }
+  .about-avatar{
+    position:relative;width:180px;height:180px;border-radius:50%;object-fit:cover;
+    border:4px solid var(--bg);display:block;background:#1a1a2e;
+  }
+  .about .role{
+    font-family:'JetBrains Mono';font-size:12px;color:#7b8dff;font-weight:600;
+    letter-spacing:1px;text-transform:uppercase;padding:6px 14px;
+    background:rgba(77,107,254,.1);border:1px solid rgba(77,107,254,.3);border-radius:100px;
+  }
+  .about-text{position:relative;z-index:1}
+  .about-text h2{
+    font-family:'Space Grotesk';font-size:clamp(32px,4vw,44px);font-weight:700;
+    letter-spacing:-1.5px;margin-bottom:10px;
+  }
+  .about-text .handle{
+    font-family:'JetBrains Mono';color:#7b8dff;font-weight:600;font-size:15px;margin-bottom:22px;display:block;
+  }
+  .about-text p{color:var(--muted);font-size:15.5px;margin-bottom:16px;line-height:1.7}
+  .about-text p b{color:var(--text);font-weight:600}
+  .about-text p .py{color:#ffd43b;font-weight:600}
+  .tags{display:flex;gap:9px;flex-wrap:wrap;margin-top:24px}
+  .tag{
+    padding:8px 16px;border-radius:100px;font-size:12.5px;font-weight:600;
+    background:rgba(77,107,254,.1);border:1px solid rgba(77,107,254,.25);color:#a9b6ff;
+    transition:.25s;
+  }
+  .tag:hover{background:rgba(77,107,254,.2);transform:translateY(-2px)}
+
+  .cta{text-align:center;padding:120px 5vw;max-width:880px;margin:0 auto;position:relative}
+  .cta::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(ellipse at center,rgba(123,97,255,.15),transparent 65%);
+    filter:blur(50px);z-index:-1;pointer-events:none;
+  }
+  .cta h2{
+    font-family:'Space Grotesk';font-size:clamp(36px,6vw,68px);font-weight:700;
+    letter-spacing:-2.5px;line-height:1.02;margin-bottom:24px;
+  }
+  .cta h2 .grad{
+    background:linear-gradient(120deg,#4d6bfe,#00d4ff,#ff4dab);
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:gradShift 4s linear infinite;
+  }
+  .cta p{color:var(--muted);font-size:17px;margin-bottom:40px}
+  .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  footer{
+    padding:60px 5vw 40px;border-top:1px solid var(--border);
+    background:rgba(0,0,0,.4);position:relative;
+  }
+  .foot-top{display:flex;justify-content:space-between;align-items:flex-start;gap:40px;flex-wrap:wrap;max-width:1200px;margin:0 auto 44px}
+  .foot-brand{max-width:320px}
+  .foot-brand .brand{margin-bottom:16px;font-size:16px}
+  .foot-brand p{color:var(--muted);font-size:14px;line-height:1.65}
+  .foot-links{display:flex;gap:70px;flex-wrap:wrap}
+  .foot-col h4{font-family:'JetBrains Mono';font-size:11.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#7b8dff;margin-bottom:18px}
+  .foot-col a{display:block;color:var(--muted);text-decoration:none;font-size:14px;margin-bottom:11px;transition:.2s}
+  .foot-col a:hover{color:var(--text);transform:translateX(3px)}
+  .foot-bottom{
+    max-width:1200px;margin:0 auto;padding-top:28px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    color:var(--dim);font-size:13.5px;
+  }
+  .foot-bottom b{color:#7b8dff}
+  .foot-bottom code{font-family:'JetBrains Mono';font-size:12px;color:#00d4ff}
+
+  .reveal{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1)}
+  .reveal.show{opacity:1;transform:translateY(0)}
+
+  @media(max-width:1024px){
+    .features{grid-template-columns:repeat(4,1fr)}
+    .feat.span-2,.feat.span-3,.feat.span-4{grid-column:span 2}
+  }
+  @media(max-width:900px){
+    .about{grid-template-columns:1fr;text-align:center;padding:40px 28px}
+    .tags{justify-content:center}
+    .stats{grid-template-columns:1fr 1fr}
+    .foot-links{gap:40px}
+    .install-card{padding:32px 24px}
+  }
+  @media(max-width:760px){
+    body{cursor:auto}
+    .cursor,.cursor-dot{display:none}
+    .nav-links{display:none}
+    .burger{display:flex}
+    .features{grid-template-columns:1fr 1fr}
+    .feat.span-2,.feat.span-3,.feat.span-4{grid-column:span 2}
+    .msg{max-width:92%}
+    .chat-body{height:380px}
+    .term-body{font-size:11.5px}
+    section{padding:80px 5vw}
+    .api-options{grid-template-columns:1fr}
+    .step{flex-direction:column;gap:16px}
+    .cmd-box{flex-direction:column}
+    .copy-btn{border-left:none;border-top:1px solid rgba(77,107,254,.2);padding:12px 18px}
+  }
+  @media(max-width:520px){
+    .features{grid-template-columns:1fr}
+    .feat.span-2,.feat.span-3,.feat.span-4{grid-column:span 1}
+    .stats{grid-template-columns:1fr 1fr}
+    .hero-btns{flex-direction:column;width:100%}
+    .btn{justify-content:center;width:100%}
+    .stat .num{font-size:36px}
+    .cta-btns{flex-direction:column;width:100%}
+    .cta-btns .btn{width:100%;justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="bg-grid"></div>
+<canvas id="particles"></canvas>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="noise"></div>
+
+<nav id="nav">
+  <a href="#" class="brand">
+    <div class="logo-wrap"><img src="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" alt="DeepSeek" /></div>
+    <span>DeepSeek <b>Agent</b></span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Возможности</a>
+    <a href="#install">Установка</a>
+    <a href="#code">Код</a>
+    <a href="#demo">Демо</a>
+    <a href="#about">Автор</a>
+    <a href="#install" class="nav-cta"><span>Установить</span></a>
+  </div>
+  <div class="burger" id="burger"><div></div><div></div><div></div></div>
+</nav>
+
+<header class="hero">
+  <div class="badge">
+    <span class="dot"></span>
+    Написан на <code>Python</code> · Создан @soxma
+  </div>
+
+  <div class="hero-logo-wrap">
+    <img class="hero-logo" src="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" alt="DeepSeek Agent" />
+  </div>
+
+  <h1 class="hero-title">
+    <span class="word"><span>Твой</span></span>
+    <span class="word"><span>умный</span></span>
+    <span class="word"><span class="grad">AI-агент</span></span><br/>
+    <span class="word"><span>на</span></span>
+    <span class="word"><span>базе</span></span>
+    <span class="word"><span class="grad">DeepSeek</span></span>
+  </h1>
+
+  <p class="hero-sub">
+    Быстрый, точный и по-настоящему полезный ассистент. Пишет код, отвечает на вопросы,
+    анализирует данные и решает задачи — всё в одном чате.
+    <b>Полностью написан на <span class="py">Python</span></b>, создан <b>@soxma</b>.
+  </p>
+
+  <div class="hero-btns">
+    <a href="#install" class="btn btn-primary"><span>⚡ Установить</span></a>
+    <a href="#demo" class="btn btn-ghost">Попробовать демо →</a>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="mouse"></div>
+    <span>Scroll</span>
+  </div>
+</header>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <div class="marquee-item"><span class="dotm"></span>Python</div>
+    <div class="marquee-item"><span class="dotm"></span>DeepSeek API</div>
+    <div class="marquee-item"><span class="dotm"></span>Async / Await</div>
+    <div class="marquee-item"><span class="dotm"></span>FastAPI</div>
+    <div class="marquee-item"><span class="dotm"></span>WebSocket</div>
+    <div class="marquee-item"><span class="dotm"></span>Context Memory</div>
+    <div class="marquee-item"><span class="dotm"></span>Streaming</div>
+    <div class="marquee-item"><span class="dotm"></span>by @soxma</div>
+    <div class="marquee-item"><span class="dotm"></span>Python</div>
+    <div class="marquee-item"><span class="dotm"></span>DeepSeek API</div>
+    <div class="marquee-item"><span class="dotm"></span>Async / Await</div>
+    <div class="marquee-item"><span class="dotm"></span>FastAPI</div>
+    <div class="marquee-item"><span class="dotm"></span>WebSocket</div>
+    <div class="marquee-item"><span class="dotm"></span>Context Memory</div>
+    <div class="marquee-item"><span class="dotm"></span>Streaming</div>
+    <div class="marquee-item"><span class="dotm"></span>by @soxma</div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num" data-count="99.9" data-suffix="%">0%</div><div class="lbl">Аптайм</div></div>
+  <div class="stat"><div class="num" data-count="128" data-suffix="K">0</div><div class="lbl">Контекст</div></div>
+  <div class="stat"><div class="num" data-count="50" data-suffix="+">0</div><div class="lbl">Языков</div></div>
+  <div class="stat"><div class="num" data-count="24" data-suffix="/7">0</div><div class="lbl">Доступ</div></div>
+</div>
+
+<section id="features">
+  <div class="sec-head reveal">
+    <div class="sec-tag">возможности</div>
+    <h2 class="sec-title">Всё, что нужно<br/>от AI-агента</h2>
+    <p class="sec-sub">Мощный движок DeepSeek в удобной обёртке на Python от @soxma</p>
+  </div>
+
+  <div class="features">
+    <div class="feat span-3">
+      <div class="feat-glow"></div>
+      <div class="ico">💬</div>
+      <h3>Умные диалоги с памятью</h3>
+      <p>Понимает контекст на десятки сообщений вперёд, ведёт длинные беседы и запоминает детали разговора между сессиями.</p>
+    </div>
+    <div class="feat span-3">
+      <div class="feat-glow"></div>
+      <div class="ico">💻</div>
+      <h3>Генерация и анализ кода</h3>
+      <p>Пишет, объясняет и дебажит код на 50+ языках. Отдаёт готовые сниппеты прямо в чат с подсветкой синтаксиса.</p>
+    </div>
+    <div class="feat span-2 py-feat">
+      <div class="feat-glow"></div>
+      <div class="ico">🐍</div>
+      <h3>100% Python</h3>
+      <p>Весь бэкенд — чистый Python. Быстро, читаемо и легко расширяется.</p>
+      <div class="mini-code">
+<span class="kw">async def</span> <span class="fn">chat</span>(prompt: <span class="kw">str</span>):<br/>
+&nbsp;&nbsp;<span class="kw">async for</span> chunk <span class="kw">in</span> client.<span class="fn">stream</span>(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;model=<span class="str">"deepseek-chat"</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}],<br/>
+&nbsp;&nbsp;):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">yield</span> chunk
+      </div>
+    </div>
+    <div class="feat span-2">
+      <div class="feat-glow"></div>
+      <div class="ico">⚡</div>
+      <h3>Стриминг ответов</h3>
+      <p>Текст приходит токен-за-токеном через <code>WebSocket</code> — ощущение живого собеседника.</p>
+    </div>
+    <div class="feat span-2">
+      <div class="feat-glow"></div>
+      <div class="ico">🔒</div>
+      <h3>Приватность</h3>
+      <p>Диалоги не используются для обучения. Данные остаются только у тебя.</p>
+    </div>
+    <div class="feat span-3">
+      <div class="feat-glow"></div>
+      <div class="ico">🌍</div>
+      <h3>Мультиязычность</h3>
+      <p>Свободно общается на русском, английском, немецком, японском и десятках других языков — без потери качества ответа.</p>
+    </div>
+    <div class="feat span-3">
+      <div class="feat-glow"></div>
+      <div class="ico">📊</div>
+      <h3>Анализ данных</h3>
+      <p>Разбирает таблицы, CSV, JSON, тексты и логи, находит закономерности и делает выводы прямо в диалоге.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="sec-head reveal">
+    <div class="sec-tag">установка</div>
+    <h2 class="sec-title">Запусти за одну<br/>команду</h2>
+    <p class="sec-sub">Открой PowerShell и вставь строку. Всё остальное установщик сделает сам.</p>
+  </div>
+
+  <div class="install-wrap reveal">
+    <div class="install-card">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h3>Установи одной командой</h3>
+          <p>Открой PowerShell (<code>Win + R</code> → напиши <code>powershell</code> → Enter) и вставь:</p>
+          <div class="cmd-box">
+            <code id="installCmd">iex (irm https://raw.githubusercontent.com/timshadow000/deepagent/refs/heads/main/install/install.ps1)</code>
+            <button class="copy-btn" id="copyBtn">Копировать</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3>Получи API-ключ</h3>
+          <p>Ключ нужен для работы агента. Получить можно в одном из двух мест:</p>
+          <div class="api-options">
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener" class="api-card">
+              <div class="api-ico">🔷</div>
+              <div class="api-info">
+                <h4>DeepSeek</h4>
+                <span>platform.deepseek.com</span>
+              </div>
+              <div class="api-arrow">→</div>
+            </a>
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" class="api-card">
+              <div class="api-ico">⚡</div>
+              <div class="api-info">
+                <h4>OpenRouter</h4>
+                <span>openrouter.ai/keys</span>
+              </div>
+              <div class="api-arrow">→</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3>Запусти и общайся</h3>
+          <p>Вставь ключ при первом запуске — и агент готов к работе. Дальше просто пиши ему в консоль.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="code">
+  <div class="sec-head reveal">
+    <div class="sec-tag">исходники</div>
+    <h2 class="sec-title">Так это выглядит<br/>под капотом</h2>
+    <p class="sec-sub">Фрагмент Python-кода агента. Живой терминал запускает «сессию» на твоих глазах.</p>
+  </div>
+
+  <div class="terminal-wrap reveal">
+    <div class="terminal">
+      <div class="term-head">
+        <div class="term-dots"><span></span><span></span><span></span></div>
+        <div class="term-title">~/deepseek-agent · main.py</div>
+      </div>
+      <div class="term-body" id="termBody"></div>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="sec-head reveal">
+    <div class="sec-tag">живое демо</div>
+    <h2 class="sec-title">Поговори с агентом</h2>
+    <p class="sec-sub">Напиши сообщение или выбери готовый вопрос ниже</p>
+  </div>
+
+  <div class="demo-wrap reveal">
+    <div class="chat-window">
+      <div class="chat-top">
+        <div class="avatar">
+          <img src="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" alt="agent" />
+        </div>
+        <div class="info">
+          <div class="name">DeepSeek Agent</div>
+          <div class="status">онлайн · отвечает мгновенно</div>
+        </div>
+        <div class="model-tag" id="modelTag">deepseek-v4.1-flash</div>
+      </div>
+      <div class="chat-body" id="chatBody">
+        <div class="msg bot">
+          <img class="av" src="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" alt="" />
+          <div class="bubble" id="welcomeMsg">Привет! 👋 Я агент DeepSeek, написанный на <b>Python</b> и созданный <b>@soxma</b>. Спроси о чём угодно — о себе, о коде, о возможностях. С чего начнём?</div>
+        </div>
+      </div>
+      <div class="quick" id="quick">
+        <button data-q="Кто тебя создал?">Кто тебя создал?</button>
+        <button data-q="Что ты умеешь?">Что ты умеешь?</button>
+        <button data-q="На чём ты написан?">На чём ты написан?</button>
+        <button data-q="Напиши код на Python">Код на Python</button>
+        <button data-q="Как установить?">Как установить?</button>
+      </div>
+      <div class="chat-input">
+        <input id="chatInput" type="text" placeholder="Напиши сообщение..." autocomplete="off" />
+        <button class="chat-send" id="chatSend">➤</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="sec-head reveal">
+    <div class="sec-tag">автор</div>
+    <h2 class="sec-title">Кто стоит за агентом</h2>
+  </div>
+
+  <div class="about reveal">
+    <div class="about-photo">
+      <div class="about-avatar-wrap">
+        <img class="about-avatar" src="https://cdn.discordapp.com/avatars/1393259544641278033/f234f671020471be70d8c69f6a3268de.webp?size=256" alt="@soxma" />
+      </div>
+      <div class="role">Developer · Python</div>
+    </div>
+    <div class="about-text">
+      <h2>@soxma</h2>
+      <span class="handle">discord · @soxma</span>
+      <p>
+        Разработчик, который собрал этого DeepSeek-агента <b>полностью на <span class="py">Python</span></b>:
+        продумал архитектуру, подключил модель через API, настроил стриминг ответов
+        и довёл до ума каждый пиксель интерфейса.
+      </p>
+      <p>
+        Цель — сделать AI, которым реально приятно и удобно пользоваться. Быстро, точно,
+        без лишнего шума. Именно таким и получился этот агент.
+      </p>
+      <div class="tags">
+        <span class="tag">Python</span>
+        <span class="tag">DeepSeek</span>
+        <span class="tag">AI Agents</span>
+        <span class="tag">Async</span>
+        <span class="tag">FastAPI</span>
+        <span class="tag">UI/UX</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Готов попробовать<br/><span class="grad">своего агента?</span></h2>
+  <p>Установи одной командой или поиграйся с демо прямо сейчас.</p>
+  <div class="cta-btns">
+    <a href="#install" class="btn btn-primary"><span>⚡ Установить</span></a>
+    <a href="#demo" class="btn btn-ghost">Открыть демо</a>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-top">
+    <div class="foot-brand">
+      <div class="brand">
+        <div class="logo-wrap"><img src="https://trace-logos.ru/assets/logos/search-previews/deepseek.webp" alt="" /></div>
+        <span>DeepSeek <b>Agent</b></span>
+      </div>
+      <p>Умный AI-агент на базе DeepSeek, написанный на Python. Создан @soxma с любовью к деталям.</p>
+    </div>
+    <div class="foot-links">
+      <div class="foot-col">
+        <h4>Навигация</h4>
+        <a href="#features">Возможности</a>
+        <a href="#install">Установка</a>
+        <a href="#code">Код</a>
+        <a href="#demo">Демо</a>
+        <a href="#about">Автор</a>
+      </div>
+      <div class="foot-col">
+        <h4>Связь</h4>
+        <a href="https://discord.com/users/1393259544641278033" target="_blank" rel="noopener">Discord @soxma</a>
+        <a href="#">Telegram</a>
+        <a href="https://github.com/timshadow000/deepagent" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="foot-col">
+        <h4>Стек</h4>
+        <a href="#">Python 3.12</a>
+        <a href="#">DeepSeek API</a>
+        <a href="#">FastAPI</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2025 DeepSeek Agent · Created by <b>@soxma</b></span>
+    <span><code>Python</code> · Powered by DeepSeek</span>
+  </div>
+</footer>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+const cursor = document.getElementById('cursor');
+const cursorDot = document.getElementById('cursorDot');
+let mx = 0, my = 0, cx = 0, cy = 0;
+
+window.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursorDot.style.transform = `translate(${mx}px, ${my}px) translate(-50%,-50%)`;
+});
+
+(function tick(){
+  cx += (mx - cx) * 0.15;
+  cy += (my - cy) * 0.15;
+  cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%)`;
+  requestAnimationFrame(tick);
+})();
+
+document.querySelectorAll('a, button, .feat, .stat, .chat-send, .quick button, input, .api-card').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+});
+
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+function resize(){
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const COLORS = ['#4d6bfe','#7b61ff','#00d4ff','#ff4dab'];
+
+class Particle {
+  constructor(){ this.reset(); }
+  reset(){
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.size = Math.random() * 1.8 + 0.4;
+    this.speedX = (Math.random() - 0.5) * 0.35;
+    this.speedY = (Math.random() - 0.5) * 0.35;
+    this.color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    this.alpha = Math.random() * 0.5 + 0.15;
+  }
+  update(){
+    this.x += this.speedX;
+    this.y += this.speedY;
+    const dx = this.x - mx;
+    const dy = this.y - my;
+    const d2 = dx*dx + dy*dy;
+    if(d2 < 14000){
+      const d = Math.sqrt(d2);
+      this.x += (dx/d) * 1.2;
+      this.y += (dy/d) * 1.2;
+    }
+    if(this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+for(let i=0; i<70; i++) particles.push(new Particle());
+
+function animate(){
+  ctx.clearRect(0, 0, W, H);
+  for(let i=0; i<particles.length; i++){
+    particles[i].update();
+    particles[i].draw();
+    for(let j=i+1; j<particles.length; j++){
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d2 = dx*dx + dy*dy;
+      if(d2 < 16000){
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = 'rgba(123,97,255,' + (0.12 * (1 - d2/16000)) + ')';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(animate);
+}
+animate();
+
+const orbs = document.querySelectorAll('.orb');
+window.addEventListener('mousemove', e => {
+  const px = (e.clientX / W - 0.5);
+  const py = (e.clientY / H - 0.5);
+  orbs.forEach((o, i) => {
+    const f = (i+1) * 12;
+    o.style.transform = `translate(${px*f}px, ${py*f}px)`;
+  });
+});
+
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 30));
+
+document.getElementById('burger').addEventListener('click', () => {
+  document.getElementById('install').scrollIntoView({behavior:'smooth'});
+});
+
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('show');
+      io.unobserve(e.target);
+    }
+  });
+}, {threshold: 0.12});
+
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.feat').forEach((el, i) => {
+  el.style.transitionDelay = (i * 0.06) + 's';
+  io.observe(el);
+});
+
+const counters = document.querySelectorAll('.num[data-count]');
+const cio = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const el = e.target;
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const isFloat = target % 1 !== 0;
+    let cur = 0;
+    const step = target / 70;
+    const t = setInterval(() => {
+      cur += step;
+      if(cur >= target){ cur = target; clearInterval(t); }
+      el.textContent = (isFloat ? cur.toFixed(1) : Math.floor(cur)) + suffix;
+    }, 20);
+    cio.unobserve(el);
+  });
+}, {threshold: 0.5});
+counters.forEach(c => cio.observe(c));
+
+document.querySelectorAll('.feat').forEach(card => {
+  const glow = card.querySelector('.feat-glow');
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const rotX = ((y - r.height/2) / r.height) * -6;
+    const rotY = ((x - r.width/2) / r.width) * 6;
+    card.style.transform = `perspective(900px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-6px)`;
+    if(glow){
+      glow.style.left = x + 'px';
+      glow.style.top = y + 'px';
+    }
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+const copyBtn = document.getElementById('copyBtn');
+const installCmd = document.getElementById('installCmd');
+copyBtn.addEventListener('click', async () => {
+  const text = installCmd.textContent.trim();
+  try {
+    await navigator.clipboard.writeText(text);
+    copyBtn.textContent = '✓ Скопировано';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Копировать';
+      copyBtn.classList.remove('copied');
+    }, 1800);
+  } catch (err) {
+    const range = document.createRange();
+    range.selectNode(installCmd);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    copyBtn.textContent = 'Выделено';
+    setTimeout(() => { copyBtn.textContent = 'Копировать'; }, 1800);
+  }
+});
+
+const termLines = [
+  {text: '<span class="prompt">$</span> python -m deepseek_agent --start', delay: 300},
+  {text: '', delay: 200},
+  {text: '<span class="kw">from</span> deepseek_agent <span class="kw">import</span> <span class="fn">Agent</span>', delay: 300},
+  {text: '<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="fn">FastAPI</span>', delay: 250},
+  {text: '', delay: 150},
+  {text: 'app = <span class="fn">FastAPI</span>()', delay: 200},
+  {text: 'agent = <span class="fn">Agent</span>(', delay: 200},
+  {text: '    model=<span class="str">"deepseek/deepseek-v4.1-flash"</span>,', delay: 150},
+  {text: '    stream=<span class="kw">True</span>,', delay: 120},
+  {text: '    memory=<span class="kw">True</span>,', delay: 120},
+  {text: ')', delay: 200},
+  {text: '', delay: 200},
+  {text: '<span class="prompt">$</span> uvicorn main:app --reload', delay: 500},
+  {text: '<span class="ok">INFO</span>:     Uvicorn running on http://127.0.0.1:8000', delay: 400},
+  {text: '<span class="ok">INFO</span>:     Agent ready · context=128K', delay: 350},
+  {text: '<span class="ok">✓</span>  Started successfully. by @soxma', delay: 400},
+];
+
+const termBody = document.getElementById('termBody');
+let termStarted = false;
+
+function typeLine(i){
+  if(i >= termLines.length) return;
+  const line = termLines[i];
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.innerHTML = line.text || '&nbsp;';
+  termBody.appendChild(div);
+  setTimeout(() => typeLine(i+1), line.delay);
+}
+
+const termObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting && !termStarted){
+      termStarted = true;
+      setTimeout(() => typeLine(0), 200);
+      termObserver.disconnect();
+    }
+  });
+}, {threshold: 0.3});
+termObserver.observe(document.getElementById('code'));
+
+const MODELS = ['deepseek-v4.1-flash', 'deepseek-v4-flash-0731', 'deepseek-v3.2-speciale'];
+const modelTag = document.getElementById('modelTag');
+function pickRandomModel(){
+  const m = MODELS[Math.floor(Math.random() * MODELS.length)];
+  modelTag.textContent = m;
+  modelTag.style.transform = 'scale(0.85)';
+  modelTag.style.opacity = '0.4';
+  setTimeout(() => {
+    modelTag.style.transform = 'scale(1)';
+    modelTag.style.opacity = '1';
+  }, 200);
+}
+
+const chatBody = document.getElementById('chatBody');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const quick = document.getElementById('quick');
+
+const SYSTEM_PROMPT = `Ты — DeepSeek Agent, AI-ассистент, созданный разработчиком @soxma (TimShadow). Ты работаешь на модели DeepSeek и полностью написан на Python. Отвечай от лица DeepSeek, будь полезным, точным и дружелюбным. Если спрашивают, кто тебя создал — отвечай @soxma. Если спрашивают про технологии — говори Python, DeepSeek API, FastAPI, WebSocket, async/await. Отвечай на русском, если вопрос на русском. Можешь использовать markdown для кода.`;
+
+let isGenerating = false;
+const conversationHistory = [];
+
+function addMsg(text, who){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + who;
+  if(who === 'bot'){
+    const av = document.createElement('img');
+    av.className = 'av';
+    av.src = 'https://trace-logos.ru/assets/logos/search-previews/deepseek.webp';
+    wrap.appendChild(av);
+  }
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = text;
+  wrap.appendChild(bubble);
+  chatBody.appendChild(wrap);
+  chatBody.scrollTop = chatBody.scrollHeight;
+  return bubble;
+}
+
+function addTyping(){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot';
+  wrap.id = 'typingMsg';
+  const av = document.createElement('img');
+  av.className = 'av';
+  av.src = 'https://trace-logos.ru/assets/logos/search-previews/deepseek.webp';
+  wrap.appendChild(av);
+  const b = document.createElement('div');
+  b.className = 'bubble typing';
+  b.innerHTML = '<span></span><span></span><span></span>';
+  wrap.appendChild(b);
+  chatBody.appendChild(wrap);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function removeTyping(){
+  const t = document.getElementById('typingMsg');
+  if(t) t.remove();
+}
+
+async function sendToDeepSeek(userMessage){
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...conversationHistory,
+    { role: 'user', content: userMessage }
+  ];
+
+  try {
+    const response = await puter.ai.chat(messages, {
+      model: 'deepseek/deepseek-v4.1-flash'
+    });
+
+    let replyText = '';
+    if (typeof response === 'string') {
+      replyText = response;
+    } else if (response?.message?.content) {
+      replyText = response.message.content;
+    } else if (response?.text) {
+      replyText = response.text;
+    } else {
+      replyText = JSON.stringify(response);
+    }
+
+    conversationHistory.push({ role: 'user', content: userMessage });
+    conversationHistory.push({ role: 'assistant', content: replyText });
+
+    if (conversationHistory.length > 20) {
+      conversationHistory.splice(0, conversationHistory.length - 20);
+    }
+
+    return replyText;
+  } catch (err) {
+    console.error('Puter.ai error:', err);
+    if (err?.message?.includes('auth') || err?.message?.includes('login') || err?.message?.includes('permission')) {
+      return 'Для работы демо нужно войти в аккаунт Puter. Это бесплатно и не требует API-ключа. Пожалуйста, обновите страницу и авторизуйтесь. 🔑';
+    }
+    if (err?.message?.includes('model')) {
+      return 'Выбранная модель временно недоступна. Попробуйте обновить страницу или задать вопрос позже. 🙏';
+    }
+    return 'Не удалось получить ответ от DeepSeek. Попробуйте ещё раз через пару секунд. 🙏';
+  }
+}
+
+function formatReply(text){
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+    return '<pre style="font-family:JetBrains Mono,monospace;font-size:12.5px;background:rgba(0,0,0,.6);padding:12px 14px;border-radius:8px;margin:8px 0;overflow-x:auto;white-space:pre-wrap;color:#c9cfea;border:1px solid rgba(255,255,255,.08)">' + code.trim() + '</pre>';
+  });
+
+  html = html.replace(/`([^`]+)`/g, '<code style="font-family:JetBrains Mono,monospace;font-size:12.5px;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:4px;color:#00d4ff">$1</code>');
+
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+async function send(text){
+  const val = (text ?? chatInput.value).trim();
+  if (!val || isGenerating) return;
+
+  isGenerating = true;
+  chatInput.value = '';
+  addMsg(val.replace(/</g, '&lt;'), 'user');
+  pickRandomModel();
+  addTyping();
+
+  chatSend.disabled = true;
+  quick.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  try {
+    const reply = await sendToDeepSeek(val);
+    removeTyping();
+    addMsg(formatReply(reply), 'bot');
+  } catch (e) {
+    removeTyping();
+    addMsg('Что-то пошло не так. Попробуй ещё раз. 🙏', 'bot');
+  } finally {
+    isGenerating = false;
+    chatSend.disabled = false;
+    quick.querySelectorAll('button').forEach(b => b.disabled = false);
+  }
+}
+
+chatSend.addEventListener('click', () => send());
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+quick.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) send(b.dataset.q);
+});
+
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    if (id === '#') return;
+    const target = document.querySelector(id);
+    if (!target) return;
+    e.preventDefault();
+    const y = target.getBoundingClientRect().top + window.scrollY - 70;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  });
+});
+
+pickRandomModel();
+
+(async () => {
+  const welcomes = [
+    'Привет! 👋 Я агент DeepSeek, написанный на <b>Python</b> и созданный <b>@soxma</b>. Спроси о чём угодно — о себе, о коде, о возможностях. С чего начнём?',
+    'Здравствуй! ⚡ Я DeepSeek-агент на <b>Python</b> от <b>@soxma</b>. Готов помочь с кодом, вопросами и анализом данных. Что интересует?',
+    'Хэй! 🙌 Я AI-агент, собранный <b>@soxma</b> на <b>Python</b> и DeepSeek. Спрашивай что угодно — я на связи.'
+  ];
+  const el = document.getElementById('welcomeMsg');
+  el.innerHTML = welcomes[Math.floor(Math.random() * welcomes.length)];
+
+  try {
+    if (typeof puter !== 'undefined' && puter.auth) {
+      await puter.auth.getUser();
+    }
+  } catch (e) {
+    console.warn('Puter auth check:', e);
+  }
+})();
+</script>
+</body>
+</html>
