@@ -895,7 +895,7 @@ class Api:
             think = getattr(d, "reasoning_content", None) or getattr(d, "reasoning", None)
             if think:
                 self._js("updateThink", think)
-            if d.content is not None:
+            if d.content:
                 text += d.content
                 self._js("updateBotBubble", d.content)
             for tc in (getattr(d, "tool_calls", None) or []):
