@@ -27,7 +27,6 @@ $pyExe = $py.Source
 Write-Host "Python: $pyExe" -ForegroundColor Green
 
 Write-Host "Устанавливаю зависимости..." -ForegroundColor Cyan
-& $pyExe -m pip install --upgrade pip --quiet 2>&1 | Out-Null
 & $pyExe -m pip install pywebview openai openpyxl pypdf --quiet 2>&1 | Out-Null
 
 $installDir = "$env:USERPROFILE\DeepSeekDesktop"
